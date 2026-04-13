@@ -2,10 +2,13 @@
 
 
 use PHPunit\Framework\TestCase;
+use Illuminate\Support\Facades\Config;
 use Mockery as m;
 
 abstract class MiddlewareTest extends TestCase
 {
+	protected $facadeMocks = [];
+
 	public static $abortCode = null;
 
 	public static function setUpBeforeClass(): void
@@ -29,6 +32,24 @@ abstract class MiddlewareTest extends TestCase
 		        MiddlewareTest::$abortCode = $code;
 		    }
 		}
+	}
+
+	public function setUp(): void
+	{
+		parent::setUp();
+
+		$app = m::mock('app')->shouldReceive('instance')->getMock();
+		$this->facadeMocks['config'] = m::mock('config');
+
+		Config::setFacadeApplication($app);
+		Config::swap($this->facadeMocks['config']);
+		$this->facadeMocks['config']->shouldReceive('get')->andReturnUsing(function ($key) {
+			return match ($key) {
+				'entrust.type' => 'web',
+				'entrust.response-error' => 'Unauthorized',
+				default => null,
+			};
+		});
 	}
 
 	public function tearDown(): void

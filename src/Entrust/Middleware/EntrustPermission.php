@@ -41,7 +41,13 @@ class EntrustPermission
 			$permissions = explode(self::DELIMITER, (string) $permissions);
 		}
 
-		if ($this->guard->guest() || !$request->user()->cans($permissions)) {
+        try {
+            $hasPermission = $request->user()->can($permissions);
+        } catch (\BadMethodCallException | \Error) {
+            $hasPermission = $request->user()->cans($permissions);
+        }
+
+        if ($this->guard->guest() || !$hasPermission) {
             switch (Config::get('entrust.type')) {
                 case 'api':
                     return response()->json(Config::get('entrust.response-error'),403);

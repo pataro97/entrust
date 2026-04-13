@@ -1,6 +1,7 @@
 <?php
 
 use Trebol\Entrust\Entrust;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Illuminate\Support\Facades\Facade;
 use Mockery as m;
@@ -324,7 +325,7 @@ class EntrustTest extends TestCase
 
     }
 
-    public function simpleFilterDataProvider()
+    public static function simpleFilterDataProvider()
     {
         return [
             // Filter passes, null is returned
@@ -336,17 +337,13 @@ class EntrustTest extends TestCase
         ];
     }
 
-    /**
-     * @dataProvider simpleFilterDataProvider
-     */
+    #[DataProvider('simpleFilterDataProvider')]
     public function testFilterGeneratedByRouteNeedsRole($returnValue, $filterTest, $abort = false, $expectedResponse = null)
     {
         $this->filterTestExecution('routeNeedsRole', 'hasRole', $returnValue, $filterTest, $abort, $expectedResponse);
     }
 
-    /**
-     * @dataProvider simpleFilterDataProvider
-     */
+    #[DataProvider('simpleFilterDataProvider')]
     public function testFilterGeneratedByRouteNeedsPermission($returnValue, $filterTest, $abort = false, $expectedResponse = null)
     {
         $this->filterTestExecution('routeNeedsPermission', 'can', $returnValue, $filterTest, $abort, $expectedResponse);
@@ -373,11 +370,11 @@ class EntrustTest extends TestCase
 
         $this->expectedResponse = $expectedResponse;
 
-        $entrust->shouldReceive($mockedMethod)->with($methodValue, m::any(true, false))->andReturn($returnValue)->once();
+        $entrust->shouldReceive($mockedMethod)->with($methodValue, m::any())->andReturn($returnValue)->once();
         $entrust->$methodTested($route, $methodValue, $expectedResponse);
     }
 
-    public function routeNeedsRoleOrPermissionFilterDataProvider()
+    public static function routeNeedsRoleOrPermissionFilterDataProvider()
     {
         return [
             // Both role and permission pass, null is returned
@@ -399,9 +396,7 @@ class EntrustTest extends TestCase
         ];
     }
 
-    /**
-     * @dataProvider routeNeedsRoleOrPermissionFilterDataProvider
-     */
+    #[DataProvider('routeNeedsRoleOrPermissionFilterDataProvider')]
     public function testFilterGeneratedByRouteNeedsRoleOrPermission(
         $roleIsValid, $permIsValid, $filterTest, $requireAll = false, $abort = false, $expectedResponse = null
     )

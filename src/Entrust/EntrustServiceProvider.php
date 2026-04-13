@@ -31,11 +31,15 @@ class EntrustServiceProvider extends ServiceProvider
     {
         // Publish config files
         $this->publishes([
-            __DIR__.'/../config/config.php' => app()->basePath() . '/config/entrust.php',
+            __DIR__.'/../config/config.php' => $this->app->configPath('entrust.php'),
         ]);
 
         // Register commands
-        $this->commands('command.entrust.migration');
+        if ($this->app->runningInConsole()) {
+            $this->commands([
+                MigrationCommand::class,
+            ]);
+        }
 
         // Register blade directives
         $this->bladeDirectives();
@@ -94,7 +98,8 @@ class EntrustServiceProvider extends ServiceProvider
      */
     private function registerCommands(): void
     {
-        $this->app->singleton('command.entrust.migration', fn($app): \Trebol\Entrust\MigrationCommand => new MigrationCommand());
+        $this->app->singleton(MigrationCommand::class, fn($app): \Trebol\Entrust\MigrationCommand => new MigrationCommand());
+        $this->app->alias(MigrationCommand::class, 'command.entrust.migration');
     }
 
     /**
@@ -116,6 +121,7 @@ class EntrustServiceProvider extends ServiceProvider
     public function provides()
     {
         return [
+            MigrationCommand::class,
             'command.entrust.migration'
         ];
     }

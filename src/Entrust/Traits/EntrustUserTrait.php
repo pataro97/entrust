@@ -179,6 +179,19 @@ trait EntrustUserTrait
     }
 
     /**
+     * Check if user has a permission by its name.
+     *
+     * @param string|array $permission Permission string or array of permissions.
+     * @param bool         $requireAll All permissions in the array are required.
+     *
+     * @return bool
+     */
+    public function can($permission, $requireAll = false)
+    {
+        return $this->cans($permission, $requireAll);
+    }
+
+    /**
      * Checks role(s) and permission(s).
      *
      * @param string|array $roles       Array of roles or comma separated string
@@ -221,7 +234,7 @@ trait EntrustUserTrait
         }
 
         foreach ($permissions as $permission) {
-            $checkedPermissions[$permission] = $this->cans($permission);
+            $checkedPermissions[$permission] = $this->can($permission);
         }
 
         // If validate all and there is a false in either

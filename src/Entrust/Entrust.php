@@ -4,6 +4,12 @@ declare(strict_types=1);
 
 namespace Trebol\Entrust;
 
+use Closure;
+use Illuminate\Contracts\Support\Responsable;
+use Illuminate\Http\Exceptions\HttpResponseException;
+use Illuminate\Routing\Events\RouteMatched;
+use Symfony\Component\HttpFoundation\Response as SymfonyResponse;
+
 /**
  * This class is the main entry point of entrust. Usually the interaction
  * with this class will be done through the Entrust Facade
@@ -59,10 +65,44 @@ class Entrust
     public function can($permission, $requireAll = false)
     {
         if ($user = $this->user()) {
-            return $user->cans($permission, $requireAll);
+            try {
+                return $user->can($permission, $requireAll);
+            } catch (\BadMethodCallException | \Error) {
+                return $user->cans($permission, $requireAll);
+            }
         }
 
         return false;
+    }
+
+    /**
+     * Register a legacy route filter or emulate it on modern Laravel versions.
+     */
+    private function registerRouteFilter(string $filterName, string $route, Closure $closure): void
+    {
+        try {
+            $this->app->router->filter($filterName, $closure);
+            $this->app->router->when($route, $filterName);
+
+            return;
+        } catch (\BadMethodCallException | \Error) {
+        }
+
+        $this->app->events->listen(RouteMatched::class, function (RouteMatched $event) use ($route, $closure): void {
+            if (!fnmatch($route, $event->request->path())) {
+                return;
+            }
+
+            $response = $closure();
+
+            if ($response instanceof Responsable) {
+                throw new HttpResponseException($response->toResponse($event->request));
+            }
+
+            if ($response instanceof SymfonyResponse) {
+                throw new HttpResponseException($response);
+            }
+        });
     }
 
     /**
@@ -117,12 +157,7 @@ class Entrust
             }
         };
 
-        // Same as Route::filter, registers a new filter
-        $this->app->router->filter($filterName, $closure);
-
-        // Same as Route::when, assigns a route pattern to the
-        // previously created filter.
-        $this->app->router->when($route, $filterName);
+        $this->registerRouteFilter($filterName, $route, $closure);
     }
 
     /**
@@ -149,12 +184,7 @@ class Entrust
             }
         };
 
-        // Same as Route::filter, registers a new filter
-        $this->app->router->filter($filterName, $closure);
-
-        // Same as Route::when, assigns a route pattern to the
-        // previously created filter.
-        $this->app->router->when($route, $filterName);
+        $this->registerRouteFilter($filterName, $route, $closure);
     }
 
     /**
@@ -186,11 +216,6 @@ class Entrust
             }
         };
 
-        // Same as Route::filter, registers a new filter
-        $this->app->router->filter($filterName, $closure);
-
-        // Same as Route::when, assigns a route pattern to the
-        // previously created filter.
-        $this->app->router->when($route, $filterName);
+        $this->registerRouteFilter($filterName, $route, $closure);
     }
 }

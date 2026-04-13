@@ -52,7 +52,7 @@ interface EntrustUserInterface
      *
      * @return array|bool
      */
-    public function ability($roles, $permissions, $options = []);
+    public function ability($roles, $permissions, array $options = []): bool|array;
 
     /**
      * Alias to eloquent many-to-many relation's attach() method.
